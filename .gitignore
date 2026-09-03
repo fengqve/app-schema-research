@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.app-schema-cache/
+app-schema-sources.json
+*.apk
+*.ipa
+*.app/
+*-jadx/
+reports/
+# Real audit JSON can contain machine-local paths and large decompiler excerpts.
+examples/*.json

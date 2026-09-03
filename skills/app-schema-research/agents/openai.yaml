@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Schema Research"
+  short_description: "调查移动 App 的自定义 Scheme、路由参数与真机可用性"
+  default_prompt: "调查指定 App 的自定义 URL Scheme，输出简洁的能力卡片与可复核证据。"

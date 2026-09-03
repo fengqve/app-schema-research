@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "同程旅行",
+      "aliases": ["同程"],
+      "android_package": "com.tongcheng.android",
+      "artifact_path": "../evidence/tongcheng.apk"
+    },
+    {
+      "name": "示例远程 App",
+      "aliases": [],
+      "artifact_url": "https://official.example/app.apk",
+      "sha256": "必须填写预先核验的六十四位SHA256",
+      "suffix": ".apk"
+    }
+  ]
+}
