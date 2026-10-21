@@ -1,41 +1,51 @@
-# App Schema Tool
+# App Schema Research
 
-一个证据优先的移动 App 自定义 URL Scheme 调查工具。它把以下层级分开记录：
+**English** · [简体中文](README.zh-CN.md)
 
-1. Scheme 是否注册；
-2. path 是否存在；
-3. query 参数是否被代码读取；
-4. 页面是否正确；
-5. 参数是否被真机业务页面消费。
+An evidence-first tool and Codex skill for investigating custom URL schemes in mobile apps. It records five questions separately:
 
-工具不分析 Universal Link，也不会把 Android 静态路由直接标记为 iOS 已支持。
+1. Is the scheme registered?
+2. Does the route path exist?
+3. Does the code read the query parameter?
+4. Does the URL open the expected page on a device?
+5. Does that page actually use the supplied parameter?
 
-默认交付的是少量“能力卡片”，而不是数百条反编译路由。例如一项能力会直接回答：它打开什么页面、URL 怎么写、哪些参数会改变业务结果、参数格式是什么、适合什么场景、静态证据在哪里，以及真机是否实际消费了参数。
+The tool does not analyze Universal Links. Static findings from an Android app are not treated as proof of iOS support.
 
-可查看两份脱敏后的真实输出：
+## What you get
 
-- [`examples/tongcheng.md`](examples/tongcheng.md)：同程酒店列表，城市和日期已生效，酒店名未生效。
-- [`examples/zhuanzhuan.md`](examples/zhuanzhuan.md)：转转搜索入口可打开，但关键词未被 iOS 页面消费。
+The default output is a small set of capability reports. Each report explains what a URL opens, how to construct it, which parameters may affect the result, their formats and use cases, and the supporting static evidence and device observations.
 
-## 安装
+Two sanitized case reports are included in Chinese:
+
+- [Tongcheng Travel](examples/tongcheng.md): the iOS hotel page accepted the city and dates, but did not use the hotel name.
+- [Zhuanzhuan](examples/zhuanzhuan.md): the iOS search page opened, but did not use the supplied keyword.
+
+These cases document both working behavior and limitations.
+
+## Installation
+
+Requires Python 3.10 or later. APK scanning also requires JADX; you can reuse an existing decompiled directory or provide the executable with `--jadx`.
 
 ```bash
+git clone https://github.com/fengqve/app-schema-research.git
+cd app-schema-research
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e .
 ```
 
-扫描 APK 时需要 JADX。可以提前反编译，也可以通过 `--jadx` 指定可执行文件。
+## Usage
 
-## 基本使用
+The examples below retain the original Chinese app names used by the source catalog: `同程旅行` (Tongcheng Travel) and `转转` (Zhuanzhuan).
 
-确认 App 身份：
+Resolve the app's identity:
 
 ```bash
 app-schema resolve "同程旅行"
 ```
 
-扫描 APK：
+Inspect an APK:
 
 ```bash
 app-schema inspect "同程旅行" \
@@ -44,16 +54,16 @@ app-schema inspect "同程旅行" \
   --output reports/tongcheng.json
 ```
 
-如果希望日常只输入 App 名，可以维护一个经过审核的来源目录：
+To inspect an app by name without specifying its package each time, maintain a reviewed source catalog:
 
 ```bash
 cp app-schema-sources.example.json app-schema-sources.json
 app-schema inspect "同程旅行" --output reports/tongcheng.json
 ```
 
-来源项可以使用本地 `artifact_path`，也可以使用公开下载地址 `artifact_url`。远程地址必须同时配置预先核验的 `sha256`，下载内容变化时工具会停止，不会继续分析未知包。
+A source entry can reference a local `artifact_path` or a public `artifact_url`. Remote sources must include a previously verified `sha256`. If the downloaded content changes, inspection stops rather than analyzing an unverified package.
 
-复用已有 JADX 目录：
+Reuse an existing JADX output directory:
 
 ```bash
 app-schema inspect "转转" \
@@ -62,13 +72,13 @@ app-schema inspect "转转" \
   --output reports/zhuanzhuan.json
 ```
 
-扫描 IPA：
+Inspect an IPA:
 
 ```bash
-app-schema inspect "目标 App" --artifact app.ipa --output reports/app.json
+app-schema inspect "Target App" --artifact app.ipa --output reports/app.json
 ```
 
-生成 Debug URL。默认拒绝没有静态参数消费证据的字段：
+Generate a debug URL. By default, the tool rejects parameters without static evidence that the code reads them:
 
 ```bash
 app-schema probe reports/zhuanzhuan.json \
@@ -78,7 +88,7 @@ app-schema probe reports/zhuanzhuan.json \
   --param searchType=0
 ```
 
-记录真机结果：
+Record an observed device result:
 
 ```bash
 app-schema record-test reports/zhuanzhuan.json \
@@ -87,40 +97,48 @@ app-schema record-test reports/zhuanzhuan.json \
   --outcome correct-page \
   --observed page=search-input \
   --observed keyword=not-consumed \
-  --notes '搜索框获得焦点并弹出键盘'
+  --notes 'The search field received focus and the keyboard opened'
 ```
 
-每次扫描同时生成 JSON 和 Markdown：
+### Reports
 
-- Markdown 是默认给人看的简洁能力报告，只展示少数高价值业务能力，每项说明作用、参数含义、入参方式、应用场景、证据和真机结果。
-- JSON 是完整审计底稿，用于追溯源码、生成 URL 和追加真机记录，不直接把数百条内部路由倾倒给决策者。
-- 只有明确需要人工穷举时才加 `--audit-index`，将全量路由索引附在 Markdown 末尾。
+Each inspection produces both JSON and Markdown:
 
-仓库还包含 `skills/app-schema-research`，可安装为 Codex Skill。Skill 负责 App 消歧、证据归并、参数语义判断、候选排序和 A/B 探针设计；CLI 负责可重复的静态扫描与结构化留证。
+- **Markdown** is a concise capability report for people. It shows a few useful capabilities, with parameter meanings, input formats, use cases, evidence and device results.
+- **JSON** is the full audit record for tracing source locations, constructing URLs and appending device observations.
+- Add `--audit-index` when you explicitly need the complete route index appended to the Markdown report.
 
-Skill 的协作方式是“LLM 做判断，扫描器做事实”：LLM 可以解释某个 Scheme 是 AI 助手、酒店搜索还是详情页，并设计下一组探针；但每个判断都必须回指包内静态证据或真机结果，不能根据 App 名或字段名把推测升级成已验证能力。
+### Codex skill
 
-## 当前支持的静态证据
+The repository includes [`skills/app-schema-research`](skills/app-schema-research), which can be installed as a Codex skill. The skill handles app disambiguation, evidence synthesis, parameter interpretation, candidate ranking and A/B probe design. The CLI performs repeatable static scans and records structured evidence.
 
-- Android Manifest 中声明的自定义 Scheme；
-- iOS `Info.plist/CFBundleURLTypes/CFBundleURLSchemes`；
-- 同程式 `@Router(project, module, visibility)`；
-- 转转式 `@Route(tradeLine, pageType, action)`；
-- `@RouteParam(name=...)`；
-- `getQueryParameter/getStringExtra/BridgeData.c/Bundle.getString` 等参数读取；
-- RouteBus 调用链中的参数与常量默认值；
-- 代码、JSON、JS、资源文件中的完整自定义 Scheme URL。
+The LLM interprets findings and proposes the next checks; the scanner provides the facts. Every conclusion must point back to package evidence or device observations. App names and parameter names alone do not establish a verified capability.
 
-## 证据边界
+## Supported static evidence
 
-- “包内未找到”不代表路由不存在：路由可能由服务端下发、加密或运行时注册。
-- APK 静态证据只证明 Android 包内实现，不证明 iOS 同名路由。
-- `Info.plist` 只证明 iOS 注册了 Scheme，不证明具体 path/query。
-- 只有真机进入正确业务页面并消费目标参数，才应标记为生产可用。
-- App 名称无法唯一确定时，工具停止，不会把普通版、Pro 版或关联 App 自动合并。
+- Custom schemes declared in an Android manifest.
+- iOS `Info.plist/CFBundleURLTypes/CFBundleURLSchemes`.
+- Tongcheng-style `@Router(project, module, visibility)` annotations.
+- Zhuanzhuan-style `@Route(tradeLine, pageType, action)` annotations.
+- `@RouteParam(name=...)` annotations.
+- Parameter reads through `getQueryParameter`, `getStringExtra`, `BridgeData.c`, `Bundle.getString` and similar calls.
+- Parameters and constant defaults in RouteBus call chains.
+- Complete custom-scheme URLs found in code, JSON, JavaScript and resource files.
 
-## MVP 限制与下一步
+## Evidence boundaries
 
-当前版本不会搜索并下载来源不明的安装包。只输入 App 名完成全流程，需要先在来源目录中配置本地公开 APK/IPA，或配置经过审核且锁定 SHA-256 的公开下载地址。
+- **Not found in a package does not mean absent.** Routes may be supplied by a server, encrypted or registered at runtime.
+- **APK evidence applies to the Android implementation.** It does not establish that an equivalent iOS route exists.
+- **An iOS scheme registration does not establish a route or its parameters.** `Info.plist` only proves that the scheme is registered.
+- **A capability is production-ready only after device verification.** The URL must open the correct business page and that page must use the target parameters.
+- **Ambiguous app identity stops the workflow.** Standard, Pro and related apps are not silently merged.
 
-后续适合增加：应用商店来源插件、更多路由框架适配器、跨版本 diff、交互式真机测试清单，以及向 Compy 输出经过验收的白名单配置。
+## Current limitations and next steps
+
+The current version does not search for or download packages from unknown sources. Name-only inspection requires a local APK/IPA entry or a reviewed public download URL with a pinned SHA-256 in the source catalog.
+
+Potential next steps include app-store source plugins, adapters for more routing frameworks, cross-version diffs, interactive device-test checklists and verified capability allowlists for Compy.
+
+## License
+
+[MIT](LICENSE).
